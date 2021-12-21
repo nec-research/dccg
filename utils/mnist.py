@@ -20,7 +20,7 @@ from torch.utils.data import Dataset
 import numpy as np
 
 
-class MNIST_Addition(Dataset):  
+class MNIST_Addition(Dataset):
     def __init__(self, dataset, examples):
         self.data = list()
         self.dataset = dataset
@@ -35,9 +35,9 @@ class MNIST_Addition(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        i1, i2, l = self.data[index]
-        return self.dataset[i1][0], self.dataset[i2][0], l
-    
+        i1, i2, lab = self.data[index]
+        return self.dataset[i1][0], self.dataset[i2][0], lab
+
 
 def test_MNIST(net, tau, test_loader, N, device):
     confusion = np.zeros((19, 19), dtype=np.uint32)
@@ -45,13 +45,14 @@ def test_MNIST(net, tau, test_loader, N, device):
     n = 0
     for data1, data2, label in test_loader:
         data1, data2 = data1.to(device), data2.to(device)
-        outputs = net.forward(data1, data2, tau=tau, beta=1, alpha=1, hard=True)
+        outputs = net.forward(data1, data2, tau=tau, beta=1,
+                              alpha=1, hard=True)
         for i, output in enumerate(outputs.cpu()):
-            l = label[i]
+            lab = label[i]
             _, out = torch.max(output.data, -1)
             c = int(out.squeeze())
-            confusion[l, c] += 1
-            if c == l:
+            confusion[lab, c] += 1
+            if c == lab:
                 correct += 1
             n += 1
     acc = correct / n
@@ -61,4 +62,4 @@ def test_MNIST(net, tau, test_loader, N, device):
         FP = sum(confusion[:, nr]) - TP
         FN = sum(confusion[nr, :]) - TP
         F1 += 2 * TP / (2 * TP + FP + FN) * (FN + TP) / N
-    return F1, acc    
+    return F1, acc

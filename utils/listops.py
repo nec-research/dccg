@@ -27,9 +27,9 @@ def json2data(json_file, vocab_dict):
             T_i.append(torch.LongTensor(inter))
             T_im.append(torch.LongTensor(data['inter_mask']))
         T_ex = torch.cat([t.unsqueeze(0) for t in T_ex], 0)
-        T_t  = torch.cat([t.unsqueeze(0) for t in T_t], 0)
+        T_t = torch.cat([t.unsqueeze(0) for t in T_t], 0)
         T_ad = torch.cat([t.unsqueeze(0) for t in T_ad], 0)
-        T_i  = torch.cat([t.unsqueeze(0) for t in T_i], 0)
+        T_i = torch.cat([t.unsqueeze(0) for t in T_i], 0)
         T_im = torch.cat([t.unsqueeze(0) for t in T_im], 0)
         T_data = torch.utils.data.TensorDataset(T_ex, T_t, T_ad, T_i, T_im)
         data_dict[size] = T_data
@@ -45,7 +45,8 @@ def get_dataloader(dataset_dict, batch_size, shuffle=True):
         shuffle_idx = torch.randperm(num) if shuffle else torch.arange(num)
         for start in range(0, num, batch_size):
             idx = shuffle_idx[start:start+batch_size]
-            batch = (data[idx], target[idx], A[idx], inter[idx], inter_mask[idx])
+            batch = (data[idx], target[idx], A[idx],
+                     inter[idx], inter_mask[idx])
             data_loader.append(batch)
             num_examples += idx.shape[0]
     np.random.shuffle(data_loader) if shuffle else data_loader

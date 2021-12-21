@@ -1,9 +1,9 @@
-# Efficient Learning of Discrete-Continuous Computation Graphs
-This repository contains the PyTorch implementation for the NeurIPS 2021 submission Efficient Learning of Discrete-Continuous Computation Graphs.
+# dccg
+This repository contains the PyTorch implementation for the NeurIPS 2021 submission [Efficient Learning of Discrete-Continuous Computation Graphs](https://neurips.cc/Conferences/2021/Schedule?showEvent=27611).
 
-## Introduction
+## Efficient Learning of Discrete-Continuous Computation Graphs
 
-With this paper, we focus on learning systems comprised of both symbolic and continuous operations where the symbolic operations are modeled as *discrete* probability distributions. In particular, we aim to analyze and improve the training behavior of *complex* computation graphs, that is, graphs with more than one discrete probability distribution in its execution paths.
+With this [paper](), we focus on learning systems comprised of both symbolic and continuous operations where the symbolic operations are modeled as *discrete* probability distributions. In particular, we aim to analyze and improve the training behavior of *complex* computation graphs, that is, graphs with more than one discrete probability distribution in its execution paths.
 
 | ![image](figures/example-discrete-continuous-1.png) |
 |:---|
@@ -38,6 +38,7 @@ In our extensive set of experiments, the aim is threefold. First, we want to ana
 * tqdm==4.6
 
 #### Data
+For the experiments **Multi-Hop Reasoning over Knowledge Graphs**, please [download](https://worksheets.codalab.org/worksheets/0xfcace41fdeec45f3bc6ddf31107b829f) *wordnet_base*, *freebase_base*, *wordnet_paths* and *freebase_paths* from [Guu et al.](https://arxiv.org/abs/1506.01094) and organize the folders [**wordnet**](data/wordnet) and [**freebase**](data/freebase) in the following way.
 ```
     data
     ├── listops
@@ -48,10 +49,31 @@ In our extensive set of experiments, the aim is threefold. First, we want to ana
     │   ├── train1.json
     │   ├── train2.json             
     │   └── vocab.json
-    └── mnist
-        ├── MNIST
-        ├── test_data.txt
-        └── train_data.txt
+    ├── mnist
+    │   ├── MNIST
+    │   ├── test_data.txt
+    │   └── train_data.txt
+    :
+    ├── freebase
+    │   ├── paths
+    │   │   ├── dev
+    │   │   ├── test
+    │   │   └── train
+    │   ├── dev.txt
+    │   ├── entities.txt   
+    │   ├── relation.txt
+    │   ├── test.txt
+    │   └── train.txt        
+    └── wordnet
+        ├── paths
+        │   ├── dev
+        │   ├── test
+        │   └── train
+        ├── dev.txt
+        ├── entities.txt   
+        ├── relation.txt
+        ├── test.txt
+        └── train.txt
 ```
 
 #### Unsupervised Parsing on ListOps
@@ -62,6 +84,18 @@ python run_listops.py --tau 1 --temp 1 --residual 1 --cuda 0
  `--temp` switches between temperature matching off/on \
  `--residual` switches between dropout residuals off/on \
  `--cuda` switches the device between cpu/cuda
+
+
+ #### Multi-Hop Reasoning over Knowledge Graphs
+ ```
+ python run_kg.py --tau 4 --temp 1 --residual 1 --cuda 0 --fb 0 --zero 5
+ ```
+  `--tau` sets the value for tau \
+  `--temp` switches between temperature matching off/on \
+  `--residual` switches between dropout residuals off/on \
+  `--cuda` switches the device between cpu/cuda \
+  `--fb` switches the dataset between wordnet/freebase \
+  `--zero` sets the training dataset to paths of length ≤X for the extrapolation task
 
 
 #### End-to-End Learning of MNIST Addition

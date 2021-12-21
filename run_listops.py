@@ -3,12 +3,11 @@ import torch.nn as nn
 import json
 import argparse
 import logging
-import numpy as np
 from copy import deepcopy
 from tqdm import tqdm
-bar_form = '{desc:<5.5}{percentage:3.0f}%|{bar:10}{r_bar}'
 from models import Net
 from utils import json2data, get_dataloader, get_beta
+bar_form = '{desc:<5.5}{percentage:3.0f}%|{bar:10}{r_bar}'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--tau', type=float, default=1.)
@@ -29,16 +28,15 @@ lr = 0.0005
 ########################
 
 
-
-
-
 def main(alpha, tau, beta):
     best_dev = 0.
     best_model = None
     for epoch in range(1, num_epochs+1):
         train_loss, alpha, beta = train(epoch, alpha, tau, beta)
-        dev_loss, acc, edge, _ = test(dev_dict, alpha=1., tau=tau, beta=1., hard=True)
-        form = 'epoch {:2}  alpha {:.3f}  tau {:.3f}  beta {:.3f}  loss {:.3f}  acc {:.3f}  edge {:.3f}'
+        dev_loss, acc, edge, _ = test(dev_dict, alpha=1., tau=tau,
+                                      beta=1., hard=True)
+        form = 'epoch {:2}  alpha {:.3f}  tau {:.3f}  beta {:.3f}  ' + \
+               'loss {:.3f}  acc {:.3f}  edge {:.3f}'
         out = form.format(epoch, alpha, tau, beta, train_loss, acc, edge)
         logger.info(out)
         if acc > best_dev:
@@ -46,12 +44,6 @@ def main(alpha, tau, beta):
             best_model = deepcopy(model.state_dict())
     analysis(best_model)
     return
-
-
-
-
-
-
 
 
 tau = args.tau
@@ -62,14 +54,11 @@ beta = 1. if not anneal else 0.
 alpha = 1. if not resid else 0.
 
 
-
 ########################################################################
 model = Net(dim, resid).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 criterion = nn.CrossEntropyLoss(reduction='sum')
 ########################################################################
-
-
 
 
 kind_dict = {
@@ -79,17 +68,19 @@ kind_dict = {
     (True, True):   'Residual_Temp'
 }
 kind = kind_dict[(anneal, resid)]
-   
+
 name = 'listops'
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+logging.basicConfig(format='%(asctime)s - %(levelname)s - ' +
+                           '%(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO,
                     handlers=[
-#                         logging.FileHandler(f'{name}.log'),
+                        # logging.FileHandler(f'{name}.log'),
                         logging.StreamHandler()
                     ])
 logger = logging.getLogger(__name__)
-logger.info(f'Run {name} with tau={tau}, Temp.-Matching:{anneal}, Dropout-Residuals:{resid} on {device}')
+logger.info(f'Run {name} with tau={tau}, Temp.-Matching:{anneal}, ' +
+            f'Dropout-Residuals:{resid} on {device}')
 
 
 logger.info('loading data...')
@@ -146,28 +137,28 @@ def test(data_dict, alpha, tau, beta, hard, test_inter=False):
             pred = output.data.max(1, keepdim=True)[1]
             correct += pred.eq(target.data.view_as(pred)).sum()
             mask = (data.unsqueeze(-1).repeat(1, 1, data.size(1)) != 0)
-            mask[:,0,:] = False
-            edge_num_true += (A[mask]==1).nonzero(as_tuple=False).shape[0]
-            edge_num += (B[mask]==1).nonzero(as_tuple=False).shape[0]
-            edge_correct += ((B[mask]==1) & (B[mask]==A[mask])).nonzero(as_tuple=False).shape[0]
+            mask[:, 0, :] = False
+            edge_num_true += (A[mask] == 1).nonzero(as_tuple=False).shape[0]
+            edge_num += (B[mask] == 1).nonzero(as_tuple=False).shape[0]
+            edge_add = ((B[mask] == 1) & (B[mask] == A[mask]))
+            edge_add = edge_add.nonzero(as_tuple=False).shape[0]
+            edge_correct += edge_add
             if test_inter:
-                inter_mask[:,0] = 0  #filter final operation for intermediate results
-                num = (inter_mask==1).nonzero(as_tuple=False).shape[0]
+                inter_mask[:, 0] = 0
+                num = (inter_mask == 1).nonzero(as_tuple=False).shape[0]
                 if num > 0:
                     inter_all += num
                     inter_out = x[inter_mask.bool()]
-                    inter_pred = inter_out.data.max(-1, keepdim=True)[1].squeeze(1)
-                    inter_target = inter[inter_mask.bool()] - 4 #inter indices are translated by 4
-                    inter_correct += inter_pred.eq(inter_target).nonzero(as_tuple=False).shape[0]  
+                    inter_pred = inter_out.data.max(-1, keepdim=True)[1]
+                    inter_pred = inter_pred.squeeze(1)
+                    inter_target = inter[inter_mask.bool()] - 4
+                    inter_add = inter_pred.eq(inter_target)
+                    inter_add = inter_add.nonzero(as_tuple=False).shape[0]
+                    inter_correct += inter_add
     test_loss /= num_ex
     acc = correct / num_ex
     inter_acc = inter_correct/inter_all if inter_all else 0.
     return test_loss, acc, edge_correct/edge_num_true, inter_acc
-
-
-
-
-
 
 
 def analysis(state_dict):
@@ -177,17 +168,20 @@ def analysis(state_dict):
     test10_dict = json2data(path + 'test10.json', vocab)
     logger.info('testing...')
     model.load_state_dict(state_dict)
-    _, test_acc, test_edge, test_inter = test(test_dict, alpha=1., tau=tau, beta=1., hard=True, test_inter=True)
+    _, test_acc, test_edge, test_inter = test(test_dict, alpha=1., tau=tau,
+                                              beta=1., hard=True,
+                                              test_inter=True)
     model.decoder.num_rounds = 8
-    _, test8_acc, _, _ = test(test8_dict, alpha=1., tau=tau, beta=1., hard=True)
+    _, test8_acc, _, _ = test(test8_dict, alpha=1., tau=tau,
+                              beta=1., hard=True)
     model.decoder.num_rounds = 10
-    _, test10_acc, _, _ = test(test10_dict, alpha=1., tau=tau, beta=1., hard=True)
-    logger.info('{:6}\tacc {:.3f}\tedge {:.3f}\tinter {:.3f}'.format('test', test_acc, test_edge, test_inter))
+    _, test10_acc, _, _ = test(test10_dict, alpha=1., tau=tau,
+                               beta=1., hard=True)
+    log = '{:6}\tacc {:.3f}\tedge {:.3f}\tinter {:.3f}'
+    logger.info(log.format('test', test_acc, test_edge, test_inter))
     logger.info('{:6}\tacc {:.3f}'.format('test8', test8_acc))
     logger.info('{:6}\tacc {:.3f}'.format('test10', test10_acc))
-    
-    
-    
-    
+
+
 if __name__ == '__main__':
     main(alpha, tau, beta)
